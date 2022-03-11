@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>StickMan - Ascii</title>
+    <script
+      src="https://unpkg.com/jimp@0.6.7/browser/lib/jimp.min.js"
+      integrity="sha512-nCaX8FBDSjGVmTbpbw9SJqur9YsDDRHfgBtFbtQZ1zw7RF44zms0lwzjdCmYl4VlSgvmzL898EUNPIDWq7XHEg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <style>
+      .ascii {
+        font-size: 5px;
+        line-height: 3px;
+        font-family: monospace;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <center>
+      <video width="384" height="200" controls playsinline></video>
+    </center>
+    <div id="ascii" class="ascii"></div>
+    <p><span id="fps-info">0</span>fps</p>
+    <script>
+      const startDrawing = () => {
+        const video = document.querySelector("video");
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const fpsInfo = document.querySelector("#fps-info");
+        const div = document.getElementById("ascii");
+
+        let width = canvas.width;
+        let height = canvas.height;
+
+        let paintCount = 0;
+        let startTime = 0.0;
+        const density = "Ñ@#W876543210?!abc;:+=-,._     ";
+        const len = density.length;
+
+        const updateCanvas = async (now, metadata) => {
+          if (startTime === 0.0) {
+            startTime = now;
+          }
+
+          ctx.drawImage(video, 0, 0, width, height);
+          const url = canvas.toDataURL();
+          const m = await Jimp.read(url);
+          const image = m.bitmap;
+          const { data } = image;
+
+          let Pixels = [];
+          let rgba = [];
+
+          for (let i = 1; i <= data.length; i++) {
+            rgba.push(data[i - 1]);
+            if (i % 4 === 0) {
+              const avg = (rgba[0] + rgba[1] + rgba[2]) / 3;
+              Pixels.push(Math.floor((avg * (len - 1)) / 255));
+              rgba = [];
+            }
+          }
+
+          let textData = "";
+
+          for (let i = 0; i < Pixels.length; i++) {
+            if (i % image.width === 0) {
+              textData += "<br>";
+            } else {
+              textData +=
+                density[Pixels[i]] === " " ? "&nbsp;" : density[Pixels[i]];
+            }
+          }
+
+          div.innerHTML = textData;
+          const elapsed = (now - startTime) / 1000.0;
+          const fps = (++paintCount / elapsed).toFixed(3);
+          fpsInfo.innerText = !isFinite(fps) ? 0 : fps;
+          video.requestVideoFrameCallback(updateCanvas);
+        };
+
+        video.src = "video.mp4";
+        video.requestVideoFrameCallback(updateCanvas);
+      };
+
+      window.addEventListener("load", startDrawing);
+    </script>
+  </body>
+</html>
